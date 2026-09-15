@@ -1,0 +1,61 @@
+# Local VM state, controller configuration and credentials
+/.lab/
+/.vagrant/
+/.agents/
+/.codex/
+/.aws/
+
+# Python environments and caches
+/.venv/
+/venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Secrets and database backups
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.dump
+
+# VM disks and installation media
+*.qcow2
+*.qcow
+*.img
+*.iso
+*.vdi
+*.vmdk
+*.ova
+*.box
+
+# Reproducible exports and raw runtime output
+# Keep reviewed acceptance evidence, JSON results and test fixtures in Git.
+/artifacts/rendered/
+/artifacts/container-logs/
+/artifacts/*.pdf
+/artifacts/*.zip
+/artifacts/bao-cao-do-an.md
+/artifacts/slides.md
+/artifacts/topology.png
+/artifacts/package-manifest.json
+/artifacts/report-build.txt
+/artifacts/preflight.json
+
+# Editor and operating-system temporary files
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo

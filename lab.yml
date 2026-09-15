@@ -1,0 +1,32 @@
+---
+# Single source of truth for Vagrant, Ansible and the container integration lab.
+lab_domain: infra.test
+lab_timezone: Asia/Ho_Chi_Minh
+lab_dmz_cidr: 10.20.10.0/24
+lab_lan_cidr: 10.20.20.0/24
+lab_router_dmz: 10.20.10.1
+lab_router_lan: 10.20.20.1
+lab_server_ip: 10.20.10.10
+lab_client_ip: 10.20.20.100
+lab_dhcp_start: 10.20.20.100
+lab_dhcp_end: 10.20.20.150
+lab_forwarders: [1.1.1.1, 9.9.9.9]
+lab_database: labapp
+lab_backup_retention_days: 7
+lab_nodes:
+  router:
+    memory: 768
+    cpus: 1
+    mgmt_mac: '52:54:00:20:00:01'
+    dmz_mac: '52:54:00:20:10:01'
+    lan_mac: '52:54:00:20:20:01'
+  server:
+    memory: 1536
+    cpus: 2
+    mgmt_mac: '52:54:00:20:00:10'
+    dmz_mac: '52:54:00:20:10:10'
+  client:
+    memory: 768
+    cpus: 1
+    mgmt_mac: '52:54:00:20:00:20'
+    lan_mac: '52:54:00:20:20:20'
