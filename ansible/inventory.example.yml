@@ -1,0 +1,14 @@
+all:
+  hosts:
+    router:
+      ansible_host: 127.0.0.1
+      ansible_port: 2222
+    server:
+      ansible_host: 127.0.0.1
+      ansible_port: 2200
+    client:
+      ansible_host: 127.0.0.1
+      ansible_port: 2201
+  vars:
+    ansible_user: vagrant
+# Example only. labctl builds the real inventory from vagrant ssh-config.
