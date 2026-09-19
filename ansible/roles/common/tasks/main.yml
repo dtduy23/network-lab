@@ -1,0 +1,113 @@
+---
+- name: Limit this playbook to the declared Ubuntu lab machines
+  ansible.builtin.assert:
+    that:
+      - inventory_hostname in lab_nodes
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version is version('24.04', '==')
+    fail_msg: This playbook manages only the disposable Ubuntu 24.04 lab guests.
+
+- name: Install common administration packages before changing routes
+  ansible.builtin.apt:
+    name: [python3, sudo, openssh-server, fail2ban, rsyslog, logrotate, curl, dnsutils, tcpdump, iproute2, iptables, ufw, jq, openssl, netcat-openbsd, traceroute, ripgrep, net-tools]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Read current guest timezone
+  ansible.builtin.command: timedatectl show -p Timezone --value
+  register: guest_timezone
+  changed_when: false
+
+- name: Set the guest timezone
+  ansible.builtin.command: "timedatectl set-timezone {{ lab_timezone }}"
+  when: guest_timezone.stdout | trim != lab_timezone
+  changed_when: true
+
+- name: Create operator group and SSH account
+  ansible.builtin.group:
+    name: operators
+    state: present
+
+- name: Create operator
+  ansible.builtin.user:
+    name: operator
+    groups: operators
+    shell: /bin/bash
+    create_home: true
+    password_lock: true
+
+- name: Create operator SSH directory
+  ansible.builtin.file:
+    path: /home/operator/.ssh
+    state: directory
+    owner: operator
+    group: operator
+    mode: '0700'
+
+- name: Install the lab-specific public key
+  ansible.builtin.copy:
+    content: "{{ lookup('ansible.builtin.file', playbook_dir + '/../.lab/keys/operator.pub') }}\n"
+    dest: /home/operator/.ssh/authorized_keys
+    owner: operator
+    group: operator
+    mode: '0600'
+
+- name: Permit selected read-only troubleshooting commands
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/network-lab-operator
+    content: |
+      Defaults:operator env_reset
+      operator ALL=(root) NOPASSWD: NOEXEC: /usr/bin/journalctl --no-pager *, /usr/bin/systemctl --no-pager status *
+    mode: '0440'
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Install SSH hardening before cloud-image configuration
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/00-network-lab.conf
+    mode: '0644'
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PubkeyAuthentication yes
+      X11Forwarding no
+      MaxAuthTries 3
+      LoginGraceTime 30
+      AllowUsers vagrant operator
+  notify: Validate and reload SSH
+
+- name: Configure SSH Fail2ban with journal backend
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/network-lab.local
+    mode: '0644'
+    content: |
+      [sshd]
+      enabled = true
+      backend = systemd
+      banaction = iptables-multiport
+      port = ssh
+      maxretry = 5
+      findtime = 600
+      bantime = 600
+      ignoreip = 127.0.0.1/8 ::1
+  notify: Restart Fail2ban
+
+- name: Enable essential services
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop: [ssh, rsyslog, fail2ban]
+
+- name: Create lab configuration and log directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: adm
+    mode: '0750'
+  loop: [/etc/network-lab, /var/log/network-lab, /var/lib/network-lab]
+
+- name: Finish SSH changes before networking
+  ansible.builtin.meta: flush_handlers
