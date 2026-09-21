@@ -1,0 +1,54 @@
+# Managed by network-infra; original files are archived in this guest only.
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ mgmt_iface }}:
+      match:
+        macaddress: {{ lab_nodes[inventory_hostname].mgmt_mac }}
+      dhcp4: true
+      dhcp6: false
+      accept-ra: false
+      dhcp4-overrides:
+        use-routes: {{ 'true' if inventory_hostname == 'router' else 'false' }}
+        use-dns: {{ 'true' if inventory_hostname == 'router' else 'false' }}
+{% if inventory_hostname != 'router' %}
+      routes:
+        - to: {{ mgmt_cidr }}
+          scope: link
+{% endif %}
+{% if inventory_hostname in ['router', 'server'] %}
+    dmz0:
+      match:
+        macaddress: {{ lab_nodes[inventory_hostname].dmz_mac }}
+      set-name: dmz0
+      addresses: [{{ lab_router_dmz if inventory_hostname == 'router' else lab_server_ip }}/24]
+      dhcp4: false
+      dhcp6: false
+      accept-ra: false
+{% if inventory_hostname == 'server' %}
+      routes:
+        - to: default
+          via: {{ lab_router_dmz }}
+      nameservers:
+        addresses: [{{ lab_server_ip }}]
+        search: [{{ lab_domain }}]
+{% endif %}
+{% endif %}
+{% if inventory_hostname in ['router', 'client'] %}
+    lan0:
+      match:
+        macaddress: {{ lab_nodes[inventory_hostname].lan_mac }}
+      set-name: lan0
+      dhcp4: {{ 'true' if inventory_hostname == 'client' else 'false' }}
+      dhcp6: false
+      accept-ra: false
+{% if inventory_hostname == 'router' %}
+      addresses: [{{ lab_router_lan }}/24]
+{% else %}
+      dhcp4-overrides:
+        use-routes: true
+        use-dns: true
+        route-metric: 50
+{% endif %}
+{% endif %}

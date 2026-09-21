@@ -1,0 +1,106 @@
+---
+- name: Determine the management NIC from the fixed MAC rather than default route
+  ansible.builtin.set_fact:
+    mgmt_iface: "{{ item }}"
+  loop: "{{ ansible_facts.interfaces }}"
+  when:
+    - ansible_facts[item].macaddress | default('') | lower == lab_nodes[inventory_hostname].mgmt_mac
+
+- name: Require a unique management adapter
+  ansible.builtin.assert:
+    that: mgmt_iface is defined
+    fail_msg: Management NIC MAC does not match lab.yml; refusing to modify networking.
+
+- name: Preserve an explicit on-link management subnet without its default route
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - 'import ipaddress,sys; print(ipaddress.IPv4Network(sys.argv[1] + "/" + sys.argv[2], strict=False))'
+      - "{{ ansible_facts[mgmt_iface].ipv4.address }}"
+      - "{{ ansible_facts[mgmt_iface].ipv4.netmask }}"
+  register: management_network
+  changed_when: false
+
+- name: Remember the management subnet
+  ansible.builtin.set_fact:
+    mgmt_cidr: "{{ management_network.stdout | trim }}"
+
+- name: Install role-specific packages before restricting management egress
+  ansible.builtin.apt:
+    name: "{{ {'router': ['dnsmasq'], 'server': ['bind9', 'bind9-utils', 'nginx', 'postgresql-16', 'postgresql-client-16'], 'client': ['isc-dhcp-client']}[inventory_hostname] }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Prevent cloud-init from rewriting guest networking on reboot
+  ansible.builtin.copy:
+    dest: /etc/cloud/cloud.cfg.d/99-network-lab.cfg
+    content: "network: {config: disabled}\n"
+    mode: '0644'
+
+- name: Find pre-existing Netplan files
+  ansible.builtin.find:
+    paths: /etc/netplan
+    patterns: ['*.yaml', '*.yml']
+  register: netplan_existing
+
+- name: Archive unmanaged Netplan files once inside the disposable guest
+  ansible.builtin.command:
+    argv: [mv, "{{ item.path }}", "{{ item.path }}.pre-network-lab"]
+    creates: "{{ item.path }}.pre-network-lab"
+  loop: "{{ netplan_existing.files }}"
+  when: item.path != '/etc/netplan/90-network-lab.yaml'
+
+- name: Render Netplan
+  ansible.builtin.template:
+    src: netplan.yaml.j2
+    dest: /etc/netplan/90-network-lab.yaml
+    owner: root
+    group: root
+    mode: '0600'
+  register: lab_netplan
+
+- name: Validate Netplan before applying
+  ansible.builtin.command: netplan generate
+  changed_when: false
+
+- name: Apply networking asynchronously to allow reconnection
+  ansible.builtin.command: netplan apply
+  async: 60
+  poll: 0
+  when: lab_netplan.changed
+  changed_when: true
+  register: lab_netplan_job
+
+- name: Reconnect to management SSH
+  ansible.builtin.wait_for_connection:
+    delay: 5
+    timeout: 120
+  when: lab_netplan.changed
+
+- name: Wait for network configuration to finish
+  ansible.builtin.async_status:
+    jid: "{{ lab_netplan_job.ansible_job_id }}"
+  register: lab_netplan_result
+  until: lab_netplan_result.finished
+  retries: 12
+  delay: 5
+  when: lab_netplan.changed
+
+- name: Disable IPv6 in this IPv4 teaching lab to avoid an unfiltered path
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/90-network-lab.conf
+    mode: '0644'
+    content: |
+      net.ipv4.ip_forward = {{ 1 if inventory_hostname == 'router' else 0 }}
+      net.ipv4.conf.all.rp_filter = 2
+      net.ipv4.conf.default.rp_filter = 2
+      net.ipv6.conf.all.disable_ipv6 = 1
+      net.ipv6.conf.default.disable_ipv6 = 1
+  register: lab_sysctl
+
+- name: Apply guest sysctl values
+  ansible.builtin.command: sysctl --system
+  when: lab_sysctl.changed
+  changed_when: true
