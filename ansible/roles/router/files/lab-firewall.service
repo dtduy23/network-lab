@@ -1,0 +1,13 @@
+[Unit]
+Description=Network lab router IPv4 firewall
+Wants=network-pre.target
+Before=network-pre.target fail2ban.service
+After=systemd-sysctl.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '/usr/sbin/iptables-restore < /etc/network-lab/iptables.rules'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

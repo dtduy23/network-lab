@@ -1,0 +1,13 @@
+# DHCP service only. DNS is provided by BIND9 in the DMZ.
+port=0
+interface=lan0
+bind-dynamic
+except-interface=lo
+dhcp-authoritative
+dhcp-range={{ lab_dhcp_start }},{{ lab_dhcp_end }},255.255.255.0,12h
+dhcp-option=option:router,{{ lab_router_lan }}
+dhcp-option=option:dns-server,{{ lab_server_ip }}
+dhcp-option=option:domain-name,{{ lab_domain }}
+dhcp-host={{ lab_nodes.client.lan_mac }},{{ lab_client_ip }},client,12h
+dhcp-leasefile=/var/lib/misc/dnsmasq.leases
+log-dhcp
