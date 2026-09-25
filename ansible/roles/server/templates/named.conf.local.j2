@@ -1,0 +1,14 @@
+zone "{{ lab_domain }}" {
+    type primary;
+    file "/etc/bind/zones/db.infra.test";
+    allow-update { none; };
+    allow-transfer { none; };
+};
+zone "{{ lab_dmz_cidr.split('.')[2:0:-1] | join('.') }}.{{ lab_dmz_cidr.split('.')[0] }}.in-addr.arpa" {
+    type primary;
+    file "/etc/bind/zones/db.10.20.10";
+};
+zone "{{ lab_lan_cidr.split('.')[2:0:-1] | join('.') }}.{{ lab_lan_cidr.split('.')[0] }}.in-addr.arpa" {
+    type primary;
+    file "/etc/bind/zones/db.10.20.20";
+};

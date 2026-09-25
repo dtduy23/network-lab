@@ -1,0 +1,10 @@
+$TTL 300
+@ IN SOA ns1.{{ lab_domain }}. admin.{{ lab_domain }}. (
+  2026101401 3600 900 604800 300 )
+@      IN NS ns1.{{ lab_domain }}.
+@      IN A  {{ lab_server_ip }}
+ns1    IN A  {{ lab_server_ip }}
+server IN A  {{ lab_server_ip }}
+www    IN A  {{ lab_server_ip }}
+router IN A  {{ lab_router_lan }}
+client IN A  {{ lab_client_ip }}

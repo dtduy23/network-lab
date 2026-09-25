@@ -1,0 +1,20 @@
+server {
+    listen {{ lab_server_ip }}:80 default_server;
+    listen {{ lab_server_ip }}:443 ssl;
+    server_name www.{{ lab_domain }} {{ lab_domain }};
+    root /var/www/network-lab;
+    index index.html;
+    ssl_certificate /etc/nginx/network-lab-tls/server.crt;
+    ssl_certificate_key /etc/nginx/network-lab-tls/server.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    server_tokens off;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    access_log /var/log/nginx/network-lab-access.log combined;
+    error_log /var/log/nginx/network-lab-error.log warn;
+    location / { try_files $uri $uri/ =404; }
+    location = /healthz {
+        default_type application/json;
+        return 200 '{"service":"network-lab-web","status":"ok"}\n';
+    }
+}

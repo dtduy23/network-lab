@@ -1,0 +1,16 @@
+acl lab_clients { 127.0.0.1; {{ lab_dmz_cidr }}; {{ lab_lan_cidr }}; };
+options {
+    directory "/var/cache/bind";
+    listen-on { 127.0.0.1; {{ lab_server_ip }}; };
+    listen-on-v6 { none; };
+    recursion yes;
+    allow-query { lab_clients; };
+    allow-recursion { lab_clients; };
+    allow-query-cache { lab_clients; };
+    allow-transfer { none; };
+    forward only;
+    forwarders { {% for address in lab_forwarders %}{{ address }}; {% endfor %} };
+    dnssec-validation auto;
+    minimal-responses yes;
+    version "unavailable";
+};

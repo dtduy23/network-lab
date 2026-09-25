@@ -1,0 +1,6 @@
+$TTL 300
+@ IN SOA ns1.{{ lab_domain }}. admin.{{ lab_domain }}. (
+  2026101401 3600 900 604800 300 )
+@  IN NS ns1.{{ lab_domain }}.
+{{ lab_router_dmz.split('.')[-1] }}  IN PTR router.{{ lab_domain }}.
+{{ lab_server_ip.split('.')[-1] }} IN PTR server.{{ lab_domain }}.
