@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Execute only inside the server/client guest. This guest's UFW is lab-owned.
+set -euo pipefail
+ufw --force reset
+ufw default deny incoming
+ufw default deny outgoing
+ufw default deny routed
+ufw allow in on {{ mgmt_iface }} to any port 22 proto tcp comment 'Vagrant and operator SSH'
+# Permit management DHCP without permitting management Internet access.
+ufw allow in on {{ mgmt_iface }} from any port 67 to any port 68 proto udp
+ufw allow out on {{ mgmt_iface }} from any port 68 to any port 67 proto udp
+{% if inventory_hostname == 'server' %}
+{% for subnet in [lab_lan_cidr, lab_dmz_cidr] %}
+{% for port in [53, 80, 443] %}
+ufw allow in on dmz0 from {{ subnet }} to {{ lab_server_ip }} port {{ port }} proto tcp
+{% endfor %}
+ufw allow in on dmz0 from {{ subnet }} to {{ lab_server_ip }} port 53 proto udp
+{% endfor %}
+# Router controls forwarded host demo traffic; HTTP is also a DMZ service.
+ufw allow in on dmz0 to {{ lab_server_ip }} port 80 proto tcp
+ufw allow out on dmz0
+{% else %}
+ufw allow in on lan0 from any port 67 to any port 68 proto udp
+ufw allow out on lan0
+{% endif %}
+ufw --force enable

@@ -1,0 +1,51 @@
+---
+- name: Disable IPv6 handling in UFW for this IPv4 lab
+  ansible.builtin.lineinfile:
+    path: /etc/default/ufw
+    regexp: '^IPV6='
+    line: IPV6=no
+
+- name: Install endpoint UFW policy script
+  ansible.builtin.template:
+    src: ufw.sh.j2
+    dest: /etc/network-lab/apply-ufw.sh
+    mode: '0700'
+  register: lab_ufw_policy
+
+- name: Check UFW state
+  ansible.builtin.command: ufw status
+  environment: {LC_ALL: C}
+  register: lab_ufw_status
+  changed_when: false
+
+- name: Apply changed UFW policy on the lab guest
+  ansible.builtin.command: /etc/network-lab/apply-ufw.sh
+  when: "lab_ufw_policy.changed or 'Status: active' not in lab_ufw_status.stdout"
+  changed_when: true
+  async: 300
+  poll: 0
+  register: endpoint_firewall_job
+
+- name: Reset SSH transport after endpoint firewall changes
+  ansible.builtin.meta: reset_connection
+
+- name: Reconnect after endpoint firewall changes
+  ansible.builtin.wait_for_connection:
+    delay: 5
+    timeout: 120
+  when: endpoint_firewall_job.changed | default(false)
+
+- name: Wait for endpoint firewall policy to finish
+  ansible.builtin.async_status:
+    jid: "{{ endpoint_firewall_job.ansible_job_id }}"
+  register: endpoint_firewall_result
+  until: endpoint_firewall_result.finished
+  retries: 60
+  delay: 5
+  when: endpoint_firewall_job.changed | default(false)
+
+- name: Rebuild Fail2ban chains after UFW reset
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+  when: "lab_ufw_policy.changed or 'Status: active' not in lab_ufw_status.stdout"
