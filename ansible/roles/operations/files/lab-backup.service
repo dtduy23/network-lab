@@ -1,0 +1,15 @@
+[Unit]
+Description=Network lab PostgreSQL backup
+After=postgresql@16-main.service
+Wants=postgresql@16-main.service
+OnFailure=lab-alert@%n.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/network-lab/backup.env
+ExecStart=/usr/local/sbin/lab-backup
+UMask=0077
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/network-lab

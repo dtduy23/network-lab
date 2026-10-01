@@ -1,0 +1,12 @@
+[Unit]
+Description=Record a local failure alert for %i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/alert.py --unit %i
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/network-lab

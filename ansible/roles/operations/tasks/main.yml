@@ -1,0 +1,83 @@
+---
+- name: Install automation scripts
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../scripts/{{ item }}"
+    dest: "/usr/local/sbin/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop: [healthcheck.py, alert.py, validate_backup.py]
+
+- name: Install database automation on server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../scripts/{{ item }}.sh"
+    dest: "/usr/local/sbin/lab-{{ item }}"
+    owner: root
+    group: root
+    mode: '0750'
+  loop: [backup, restore]
+  when: inventory_hostname == 'server'
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: /var/backups/network-lab
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  when: inventory_hostname == 'server'
+
+- name: Install backup environment file
+  ansible.builtin.template:
+    src: backup.env.j2
+    dest: /etc/network-lab/backup.env
+    mode: '0600'
+  when: inventory_hostname == 'server'
+
+- name: Install health configuration
+  ansible.builtin.template:
+    src: health.json.j2
+    dest: /etc/network-lab/health.json
+    mode: '0640'
+
+- name: Install health and alert systemd units
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: '0644'
+  loop: [lab-health.service, lab-health.timer, 'lab-alert@.service']
+
+- name: Install backup systemd units
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: '0644'
+  loop: [lab-backup.service, lab-backup.timer]
+  when: inventory_hostname == 'server'
+
+- name: Configure JSON log rotation
+  ansible.builtin.copy:
+    src: logrotate.conf
+    dest: /etc/logrotate.d/network-lab
+    mode: '0644'
+
+- name: Take the first backup immediately
+  ansible.builtin.systemd_service:
+    name: lab-backup
+    daemon_reload: true
+    state: started
+  when: inventory_hostname == 'server'
+
+- name: Enable backup timer
+  ansible.builtin.systemd_service:
+    name: lab-backup.timer
+    enabled: true
+    state: started
+  when: inventory_hostname == 'server'
+
+- name: Run initial health check and enable periodic monitoring
+  ansible.builtin.systemd_service:
+    name: lab-health.timer
+    daemon_reload: true
+    enabled: true
+    state: started

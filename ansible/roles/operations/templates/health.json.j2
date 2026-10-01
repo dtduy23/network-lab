@@ -1,0 +1,9 @@
+{
+  "disk_path": "/",
+  "services": {{ {'router': ['ssh', 'dnsmasq', 'lab-firewall', 'fail2ban'], 'server': ['ssh', 'named', 'nginx', 'postgresql@16-main', 'fail2ban'], 'client': ['ssh', 'fail2ban']}[inventory_hostname] | tojson }},
+{% if inventory_hostname == 'server' %}
+  "backup_directory": "/var/backups/network-lab",
+  "backup_database": "{{ lab_database }}",
+{% endif %}
+  "thresholds": {"memory_percent": 90, "disk_percent": 85, "inode_percent": 90, "load_per_cpu": 2, "backup_max_age_hours": 26}
+}
