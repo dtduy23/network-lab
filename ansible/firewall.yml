@@ -1,0 +1,17 @@
+---
+- name: Reconcile routing firewall and DHCP without reprovisioning endpoints
+  hosts: router
+  become: true
+  vars_files: [../lab.yml]
+  tasks:
+    - name: Identify the declared WAN management adapter
+      ansible.builtin.set_fact:
+        mgmt_iface: "{{ item }}"
+      loop: "{{ ansible_facts.interfaces }}"
+      when: ansible_facts[item].macaddress | default('') | lower == lab_nodes.router.mgmt_mac
+    - name: Require the adapter declared in lab.yml
+      ansible.builtin.assert:
+        that: mgmt_iface is defined
+    - name: Apply the shared router role
+      ansible.builtin.include_role:
+        name: router

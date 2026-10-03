@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+set -euo pipefail
+LAB_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+cd "$LAB_ROOT"
+export VAGRANT_HOME="$LAB_ROOT/.lab/vagrant-home"
+export ANSIBLE_CONFIG="$LAB_ROOT/ansible/ansible.cfg"
+export ANSIBLE_LOCAL_TEMP="$LAB_ROOT/.lab/ansible-tmp"
+export ANSIBLE_HOME="$LAB_ROOT/.lab/ansible-home"
+export ANSIBLE_SSH_CONTROL_PATH_DIR="$LAB_ROOT/.lab/ssh-control"
+if [[ -z ${LAB_PROVIDER:-} && -f .lab/backend && $(cat .lab/backend) == qemu ]]; then
+  export LAB_PROVIDER=qemu
+fi
+mkdir -p "$VAGRANT_HOME" "$ANSIBLE_LOCAL_TEMP" "$ANSIBLE_HOME" "$ANSIBLE_SSH_CONTROL_PATH_DIR" artifacts
+PYTHON="$LAB_ROOT/.venv/bin/python"
+ANSIBLE="$LAB_ROOT/.venv/bin/ansible-playbook"
+need_tools() {
+  if [[ ! -x "$ANSIBLE" ]]; then
+    echo 'Chạy ./labctl bootstrap trước.' >&2
+    exit 2
+  fi
+}
+inventory() {
+  if [[ -f .lab/backend && $(cat .lab/backend) == qemu ]]; then
+    "$PYTHON" scripts/qemu_lab.py ssh-config > .lab/ssh-config.tmp
+  else
+    vagrant ssh-config > .lab/ssh-config.tmp
+  fi
+  [[ -s .lab/ssh-config.tmp ]] || { echo 'Chưa có VM đang chạy.' >&2; exit 2; }
+  mv .lab/ssh-config.tmp .lab/ssh-config
+  "$PYTHON" scripts/inventory.py .lab/ssh-config .lab/inventory.yml
+}
+case "${1:-help}" in
+  bootstrap)
+    python3 -m venv .venv
+    .venv/bin/python -m pip install --disable-pip-version-check -r requirements.txt
+    mkdir -p .lab/keys
+    if [[ ! -f .lab/keys/operator ]]; then
+      ssh-keygen -q -t ed25519 -N '' -C network-infra-operator -f .lab/keys/operator
+    fi
+    chmod 700 .lab/keys
+    chmod 600 .lab/keys/operator
+    echo 'Controller và khóa SSH riêng cho lab đã sẵn sàng.'
+    ;;
+  doctor) python3 scripts/doctor.py ;;
+  up)
+    need_tools
+    python3 scripts/doctor.py --require-vm
+    if [[ ${LAB_PROVIDER:-virtualbox} == qemu ]]; then
+      "$PYTHON" scripts/qemu_lab.py up
+    else
+      if [[ -f .lab/backend && $(cat .lab/backend) == qemu ]]; then
+        echo 'Đang có backend QEMU; halt/destroy trước khi đổi provider.' >&2; exit 2
+      fi
+      vagrant up --provider="${LAB_PROVIDER:-virtualbox}"
+      printf 'vagrant\n' > .lab/backend
+    fi
+    "$0" provision
+    ;;
+  provision)
+    need_tools; inventory
+    "$ANSIBLE" -i .lab/inventory.yml ansible/site.yml "${@:2}"
+    ;;
+  verify)
+    need_tools; inventory
+    if "$ANSIBLE" -i .lab/inventory.yml ansible/verify.yml "${@:2}" | tee artifacts/vm-verification.txt; then
+      "$PYTHON" scripts/record_vm.py
+    else
+      "$PYTHON" scripts/record_vm.py --failed
+      exit 1
+    fi
+    ;;
+  firewall)
+    need_tools; inventory
+    "$ANSIBLE" -i .lab/inventory.yml ansible/firewall.yml | tee artifacts/vm-firewall.txt
+    ;;
+  operations)
+    need_tools; inventory
+    "$ANSIBLE" -i .lab/inventory.yml ansible/operations.yml "${@:2}"
+    ;;
+  test)
+    need_tools
+    "$PYTHON" -m pytest -q tests --junitxml=artifacts/unit-tests.xml
+    "$PYTHON" scripts/render.py
+    "$ANSIBLE" -i ansible/inventory.example.yml ansible/site.yml --syntax-check
+    "$ANSIBLE" -i ansible/inventory.example.yml ansible/verify.yml --syntax-check
+    "$ANSIBLE" -i ansible/inventory.example.yml ansible/reboot.yml --syntax-check
+    "$ANSIBLE" -i ansible/inventory.example.yml ansible/drills.yml --syntax-check
+    "$ANSIBLE" -i ansible/inventory.example.yml ansible/firewall.yml --syntax-check
+    "$ANSIBLE" -i ansible/inventory.example.yml ansible/operations.yml --syntax-check
+    ruby -c Vagrantfile
+    shellcheck labctl scripts/*.sh
+    ;;
+  integration) need_tools; "$PYTHON" scripts/render.py; bash scripts/integration.sh ;;
+  report) python3 scripts/build_report.py ;;
+  halt|destroy)
+    if [[ -f .lab/backend && $(cat .lab/backend) == qemu ]]; then
+      need_tools; "$PYTHON" scripts/qemu_lab.py "$1"
+    elif [[ $1 == halt ]]; then
+      vagrant halt
+    else
+      vagrant destroy -f
+    fi
+    ;;
+  reboot)
+    need_tools; inventory
+    "$ANSIBLE" -i .lab/inventory.yml ansible/reboot.yml | tee artifacts/vm-reboot.txt
+    "$0" verify
+    "$PYTHON" scripts/record_vm.py --reboot
+    ;;
+  drills)
+    need_tools; inventory
+    "$ANSIBLE" -i .lab/inventory.yml ansible/drills.yml | tee artifacts/vm-drills.txt
+    "$0" verify
+    "$PYTHON" scripts/record_vm.py --drills
+    ;;
+  ssh)
+    case "${2:-}" in router|server|client) ;; *) exit 2 ;; esac
+    if [[ -f .lab/backend && $(cat .lab/backend) == qemu ]]; then
+      need_tools; "$PYTHON" scripts/qemu_lab.py ssh "$2"
+    else
+      vagrant ssh "$2"
+    fi
+    ;;
+  *)
+    echo 'Usage: ./labctl {bootstrap|doctor|up|provision|firewall|operations|verify|reboot|drills|test|integration|report|halt|destroy|ssh NODE}'
+    ;;
+esac

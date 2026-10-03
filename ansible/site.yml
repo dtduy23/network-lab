@@ -1,0 +1,29 @@
+---
+- name: Bootstrap administration on all lab guests
+  hosts: all
+  any_errors_fatal: true
+  become: true
+  vars_files: [../lab.yml]
+  roles: [common]
+  tags: [bootstrap]
+
+- name: Configure router before dependent guests
+  hosts: router
+  any_errors_fatal: true
+  become: true
+  vars_files: [../lab.yml]
+  roles: [network, router, operations]
+
+- name: Configure DMZ services
+  hosts: server
+  any_errors_fatal: true
+  become: true
+  vars_files: [../lab.yml]
+  roles: [network, server, operations]
+
+- name: Configure DHCP client
+  hosts: client
+  any_errors_fatal: true
+  become: true
+  vars_files: [../lab.yml]
+  roles: [network, endpoint, operations]

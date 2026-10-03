@@ -1,0 +1,7 @@
+---
+- name: Reconcile monitoring and backup units on declared lab guests
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files: [../lab.yml]
+  roles: [operations]
