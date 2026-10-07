@@ -1,0 +1,11 @@
+---
+- name: Reboot each lab VM and retain management connectivity
+  hosts: all
+  become: true
+  serial: 1
+  tasks:
+    - name: Reboot the disposable guest
+      ansible.builtin.reboot:
+        reboot_timeout: 600
+        connect_timeout: 10
+        post_reboot_delay: 10

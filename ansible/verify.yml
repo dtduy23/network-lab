@@ -1,0 +1,220 @@
+---
+- name: Verify administration and routing on every guest
+  hosts: all
+  become: true
+  vars_files: [../lab.yml]
+  tasks:
+    - name: Check effective SSH settings
+      ansible.builtin.command: sshd -T
+      register: ssh_config
+      changed_when: false
+    - name: Require key-based SSH and disabled root login
+      ansible.builtin.assert:
+        that:
+          - "'passwordauthentication no' in ssh_config.stdout"
+          - "'permitrootlogin no' in ssh_config.stdout"
+          - "'kbdinteractiveauthentication no' in ssh_config.stdout"
+    - name: Check service timers
+      ansible.builtin.command: systemctl is-active lab-health.timer fail2ban
+      changed_when: false
+    - name: Check active SSH protection jail
+      ansible.builtin.command: fail2ban-client status sshd
+      changed_when: false
+    - name: Check the primary route
+      ansible.builtin.command: ip -4 route show default
+      register: default_route
+      changed_when: false
+    - name: Require endpoint Internet traffic to pass through router
+      ansible.builtin.assert:
+        that:
+          - "('via ' + lab_router_dmz + ' dev dmz0') in default_route.stdout if inventory_hostname == 'server' else ('via ' + lab_router_lan + ' dev lan0') in default_route.stdout"
+      when: inventory_hostname != 'router'
+    - name: Run the real health script
+      ansible.builtin.command: python3 /usr/local/sbin/healthcheck.py
+      changed_when: false
+      register: health_snapshot
+      until: health_snapshot.rc == 0
+      retries: 12
+      delay: 10
+
+- name: Verify LAN services and isolation
+  hosts: client
+  become: true
+  vars_files: [../lab.yml]
+  tasks:
+    - name: Verify the reserved DHCP address
+      ansible.builtin.command: ip -4 -o addr show dev lan0
+      register: client_ip
+      changed_when: false
+    - name: Require router DHCP reservation
+      ansible.builtin.assert:
+        that: "(lab_client_ip + '/24') in client_ip.stdout"
+    - name: Query DNS over UDP
+      ansible.builtin.command: "dig +short +time=3 +tries=1 @{{ lab_server_ip }} www.{{ lab_domain }}"
+      register: dns_udp
+      changed_when: false
+    - name: Query DNS over TCP
+      ansible.builtin.command: "dig +tcp +short +time=3 +tries=1 @{{ lab_server_ip }} www.{{ lab_domain }}"
+      register: dns_tcp
+      changed_when: false
+    - name: Query reverse DNS
+      ansible.builtin.command: "dig +short +time=3 +tries=1 @{{ lab_server_ip }} -x {{ lab_client_ip }}"
+      register: dns_reverse
+      changed_when: false
+    - name: Require correct DNS responses
+      ansible.builtin.assert:
+        that:
+          - dns_udp.stdout | trim == lab_server_ip
+          - dns_tcp.stdout | trim == lab_server_ip
+          - dns_reverse.stdout | trim == 'client.' + lab_domain + '.'
+    - name: Check missing name is NXDOMAIN
+      ansible.builtin.command: "dig +time=3 +tries=1 @{{ lab_server_ip }} absent.{{ lab_domain }}"
+      register: dns_missing
+      changed_when: false
+    - name: Require NXDOMAIN
+      ansible.builtin.assert:
+        that: "'status: NXDOMAIN' in dns_missing.stdout"
+    - name: Require zone transfer to be refused
+      ansible.builtin.command: "dig +time=3 +tries=1 @{{ lab_server_ip }} {{ lab_domain }} AXFR"
+      register: dns_axfr
+      failed_when: false
+      changed_when: false
+    - name: Verify transfer restriction
+      ansible.builtin.assert:
+        that: "'Transfer failed' in dns_axfr.stdout or dns_axfr.rc != 0"
+    - name: Check web health through router
+      ansible.builtin.uri:
+        url: "http://www.{{ lab_domain }}/healthz"
+        return_content: true
+      register: web_health
+    - name: Require successful application health response
+      ansible.builtin.assert:
+        that: web_health.json.status == 'ok'
+    - name: Fetch the lab certificate through administration channel
+      ansible.builtin.slurp:
+        src: /etc/nginx/network-lab-tls/server.crt
+      delegate_to: server
+      register: lab_cert
+    - name: Install certificate for this verification request
+      ansible.builtin.copy:
+        content: "{{ lab_cert.content | b64decode }}"
+        dest: /etc/network-lab/server.crt
+        mode: '0644'
+    - name: Verify HTTPS with certificate validation enabled
+      ansible.builtin.command: "curl --fail --silent --show-error --max-time 5 --cacert /etc/network-lab/server.crt https://www.{{ lab_domain }}/healthz"
+      changed_when: false
+    - name: Attempt forbidden service connections
+      ansible.builtin.command: "nc -z -w 2 {{ lab_server_ip }} {{ item }}"
+      loop: [22, 5432]
+      register: blocked_ports
+      changed_when: false
+      failed_when: false
+    - name: Require firewall denials
+      ansible.builtin.assert:
+        that: item.rc != 0
+      loop: "{{ blocked_ports.results }}"
+
+- name: Verify DHCP lease and firewall rules on router
+  hosts: router
+  become: true
+  vars_files: [../lab.yml]
+  tasks:
+    - name: Check router default deny policy survives provisioning
+      ansible.builtin.command: iptables -S
+      register: router_policy
+      changed_when: false
+    - name: Require default deny on INPUT and FORWARD
+      ansible.builtin.assert:
+        that:
+          - "'-P INPUT DROP' in router_policy.stdout"
+          - "'-P FORWARD DROP' in router_policy.stdout"
+    - name: Read DHCP leases
+      ansible.builtin.slurp:
+        src: /var/lib/misc/dnsmasq.leases
+      register: leases
+    - name: Require client MAC and reserved address in a real lease
+      ansible.builtin.assert:
+        that:
+          - lab_nodes.client.lan_mac in (leases.content | b64decode)
+          - lab_client_ip in (leases.content | b64decode)
+    - name: Check IPv4 forwarding
+      ansible.builtin.command: sysctl -n net.ipv4.ip_forward
+      register: forwarding
+      changed_when: false
+    - name: Require enabled forwarding
+      ansible.builtin.assert:
+        that: forwarding.stdout | trim == '1'
+    - name: Collect firewall counters
+      ansible.builtin.command: iptables -nvL FORWARD
+      changed_when: false
+
+- name: Verify backup and safe restore on server
+  hosts: server
+  become: true
+  vars_files: [../lab.yml]
+  tasks:
+    - name: Check backup timer
+      ansible.builtin.command: systemctl is-active lab-backup.timer
+      changed_when: false
+    - name: Create a real backup
+      ansible.builtin.command: /usr/local/sbin/lab-backup
+      register: new_backup
+      changed_when: true
+    - name: Choose a unique restore database
+      ansible.builtin.set_fact:
+        restore_database: "lab_restore_{{ ansible_facts.date_time.epoch }}"
+    - name: Exercise restore and compare demonstration data
+      block:
+        - name: Restore to a new database
+          ansible.builtin.command:
+            argv: [/usr/local/sbin/lab-restore, "{{ new_backup.stdout_lines[-1] }}", "{{ restore_database }}"]
+          register: restore_run
+          changed_when: true
+        - name: Count restored events
+          ansible.builtin.command:
+            argv: [runuser, -u, postgres, --, psql, -X, -tAc, 'SELECT count(*) FROM lab_events', -d, "{{ restore_database }}"]
+          register: restored_events
+          changed_when: false
+        - name: Require the seeded events to survive backup and restore
+          ansible.builtin.assert:
+            that: restored_events.stdout | int >= 3
+      always:
+        - name: Remove only the disposable verification database
+          ansible.builtin.command:
+            argv: [runuser, -u, postgres, --, dropdb, --if-exists, "{{ restore_database }}"]
+          changed_when: true
+          when: restore_run is defined and restore_run.rc | default(1) == 0
+
+- name: Verify host port forwarding
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Verify operator key and restricted sudo command on each guest
+      ansible.builtin.command:
+        argv:
+          - ssh
+          - -i
+          - "{{ playbook_dir }}/../.lab/keys/operator"
+          - -p
+          - "{{ hostvars[item].ansible_port | string }}"
+          - -o
+          - BatchMode=yes
+          - -o
+          - IdentitiesOnly=yes
+          - -o
+          - StrictHostKeyChecking=yes
+          - -o
+          - "UserKnownHostsFile={{ playbook_dir }}/../.lab/known_hosts"
+          - "operator@{{ hostvars[item].ansible_host }}"
+          - sudo -n /usr/bin/systemctl --no-pager status ssh
+      loop: [router, server, client]
+      changed_when: false
+    - name: Check localhost to WAN to DMZ DNAT
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080/healthz
+        return_content: true
+      register: forwarded_web
+    - name: Require host demonstration route
+      ansible.builtin.assert:
+        that: forwarded_web.json.status == 'ok'
