@@ -1,0 +1,31 @@
+name: Network lab verification
+on:
+  push:
+  pull_request:
+jobs:
+  lab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install syntax checker
+        run: sudo apt-get update && sudo apt-get install -y shellcheck ruby
+      - name: Bootstrap controller
+        run: ./labctl bootstrap
+      - name: Regression and syntax checks
+        run: ./labctl test
+      - name: Real service and firewall integration
+        run: ./labctl integration
+      - name: Save verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: network-lab-evidence
+          path: |
+            artifacts/unit-tests.xml
+            artifacts/integration-results.json
+            artifacts/container-logs/*.txt
