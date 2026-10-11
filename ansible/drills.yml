@@ -1,0 +1,130 @@
+---
+- name: Verify health alerts and backup failure recovery in the disposable server
+  hosts: server
+  become: true
+  gather_facts: false
+  vars_files: [../lab.yml]
+  tasks:
+    - name: Exercise DNS service failure with guaranteed recovery
+      block:
+        - name: Stop DNS service
+          ansible.builtin.service:
+            name: named
+            state: stopped
+        - name: Trigger the health service
+          ansible.builtin.command: systemctl start lab-health.service
+          register: failed_health
+          failed_when: false
+          changed_when: true
+        - name: Require failed health result
+          ansible.builtin.assert:
+            that: failed_health.rc != 0
+        - name: Wait for local alert service
+          ansible.builtin.command: grep -F 'lab-health.service' /var/log/network-lab/alerts.jsonl
+          register: health_alert
+          until: health_alert.rc == 0
+          retries: 10
+          delay: 2
+          changed_when: false
+      always:
+        - name: Restore DNS service
+          ansible.builtin.service:
+            name: named
+            state: started
+        - name: Clear health failure after DNS recovery
+          ansible.builtin.command: systemctl reset-failed lab-health.service
+          changed_when: false
+    - name: Enumerate complete backups before failure
+      ansible.builtin.find:
+        paths: /var/backups/network-lab
+        patterns: "{{ lab_database }}_20*"
+        file_type: directory
+      register: backups_before
+    - name: Exercise database backup failure with guaranteed recovery
+      block:
+        - name: Stop database cluster
+          ansible.builtin.service:
+            name: postgresql@16-main
+            state: stopped
+        - name: Attempt dump while database is stopped directly via the backup script
+          ansible.builtin.command: /usr/local/sbin/lab-backup
+          register: failed_backup
+          changed_when: false
+          failed_when: false
+        - name: Require failure instead of empty successful dump
+          ansible.builtin.assert:
+            that: failed_backup.rc != 0
+        - name: Enumerate remaining complete backups
+          ansible.builtin.find:
+            paths: /var/backups/network-lab
+            patterns: "{{ lab_database }}_20*"
+            file_type: directory
+          register: backups_after
+        - name: Require previous backups to be preserved
+          ansible.builtin.assert:
+            that: backups_before.files | map(attribute='path') | sort == backups_after.files | map(attribute='path') | sort
+      always:
+        - name: Restore database cluster
+          ansible.builtin.service:
+            name: postgresql@16-main
+            state: started
+    - name: Exercise backup systemd failure and OnFailure without touching original packages
+      block:
+        - name: Override only the lab backup environment with an absent test database
+          ansible.builtin.copy:
+            dest: /etc/network-lab/backup.env
+            mode: '0600'
+            content: |
+              LAB_DB=lab_missing_drill
+              LAB_BACKUP_DIR=/var/backups/network-lab
+              LAB_RETENTION_DAYS=7
+        - name: Trigger failed backup unit
+          ansible.builtin.command: systemctl start lab-backup.service
+          register: failed_backup_unit
+          failed_when: false
+          changed_when: true
+        - name: Require systemd failure
+          ansible.builtin.assert:
+            that: failed_backup_unit.rc != 0
+        - name: Wait for local backup failure alert
+          ansible.builtin.command: grep -F 'lab-backup.service' /var/log/network-lab/alerts.jsonl
+          register: backup_alert
+          until: backup_alert.rc == 0
+          retries: 10
+          delay: 2
+          changed_when: false
+      always:
+        - name: Restore the configured backup environment
+          ansible.builtin.template:
+            src: roles/operations/templates/backup.env.j2
+            dest: /etc/network-lab/backup.env
+            mode: '0600'
+        - name: Reset backup failure and take a successful backup
+          ansible.builtin.shell: systemctl reset-failed lab-backup.service && systemctl start lab-backup.service
+          changed_when: true
+    - name: Force log rotation with a private state file
+      ansible.builtin.command: logrotate --force --state /var/lib/network-lab/logrotate.state /etc/logrotate.d/network-lab
+      changed_when: true
+    - name: Write a new health event after rotation
+      ansible.builtin.command: python3 /usr/local/sbin/healthcheck.py
+      changed_when: true
+    - name: Check newly created log permissions
+      ansible.builtin.stat:
+        path: /var/log/network-lab/health.jsonl
+      register: health_log
+    - name: Require root-owned log with expected mode
+      ansible.builtin.assert:
+        that:
+          - health_log.stat.pw_name == 'root'
+          - health_log.stat.gr_name == 'adm'
+          - health_log.stat.mode == '0640'
+    - name: Save rotated local alerts as reviewable evidence
+      ansible.builtin.fetch:
+        src: /var/log/network-lab/alerts.jsonl.1
+        dest: "{{ playbook_dir }}/../artifacts/vm-alerts.jsonl"
+        flat: true
+    - name: Save recovered health snapshot
+      ansible.builtin.fetch:
+        src: /var/log/network-lab/health.jsonl
+        dest: "{{ playbook_dir }}/../artifacts/vm-health.jsonl"
+        flat: true
