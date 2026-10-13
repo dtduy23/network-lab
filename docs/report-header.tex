@@ -1,0 +1,26 @@
+\AtBeginDocument{%
+  \renewcommand{\contentsname}{Mục lục}%
+  \renewcommand{\figurename}{Hình}%
+  \renewcommand{\tablename}{Bảng}%
+}
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\usepackage{fvextra}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},breaklines,breakanywhere}
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begin{titlepage}
+    \thispagestyle{empty}
+    \centering
+    {\Large Ho Chi Minh City University of Science\par}
+    \vspace{2.5cm}
+    {\Huge\bfseries\@title\par}
+    \vspace{2cm}
+    {\Large\@author\par}
+    \vfill
+    {\large Báo cáo đồ án quản trị hệ thống và mạng\par}
+    \vspace{1cm}
+    {\large\@date\par}
+  \end{titlepage}
+}
+\makeatother

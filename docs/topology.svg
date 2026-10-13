@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="780" viewBox="0 0 1280 780">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#375879"/></marker>
+  <style>text{font-family:DejaVu Sans,sans-serif;fill:#182d46}.title{font-size:28px;font-weight:bold}.head{font-size:22px;font-weight:bold}.body{font-size:17px}.small{font-size:15px;fill:#47617c}.line{fill:none;stroke:#375879;stroke-width:3;marker-end:url(#arrow)}.mgmt{fill:none;stroke:#7589a3;stroke-width:2;stroke-dasharray:7 6}</style>
+</defs>
+<rect width="1280" height="780" fill="#f5f8fc"/>
+<text class="title" x="48" y="53">Linux Network Infrastructure &amp; Systems Automation Lab</text>
+<text class="small" x="48" y="83">Data plane: WAN / DMZ / LAN  ·  Control plane: SSH management  ·  Ubuntu 24.04</text>
+<rect x="40" y="125" width="1200" height="120" rx="18" fill="#e8edf6" stroke="#c0cada"/>
+<text class="head" x="64" y="166">Controller</text>
+<text class="body" x="64" y="195">Vagrant / Ansible / labctl  |  QEMU TCG fallback  |  SSH keys stored outside source</text>
+<text class="small" x="64" y="224">Management SSH reaches each guest; server/client default route and business traffic go through the lab router.</text>
+<path fill="none" stroke="#7589a3" stroke-width="2" stroke-dasharray="7 6" d="M550 245V304M550 276H1040V425M550 276H1040V602"/>
+<rect x="42" y="310" width="242" height="168" rx="18" fill="#e9f0fa" stroke="#a8bbd5"/>
+<text class="head" x="65" y="349">WAN / Internet</text>
+<text class="body" x="65" y="384">Provider / QEMU NAT</text>
+<text class="body" x="65" y="415">localhost:8080</text>
+<text class="small" x="65" y="449">HTTP demo via DNAT</text>
+<rect x="360" y="304" width="335" height="240" rx="18" fill="#dff3ef" stroke="#77b7ac" stroke-width="2"/>
+<text class="head" x="385" y="345">Router / Firewall</text>
+<text class="body" x="385" y="381">WAN: DHCP management NIC</text>
+<text class="body" x="385" y="411">dmz0: 10.20.10.1/24</text>
+<text class="body" x="385" y="441">lan0: 10.20.20.1/24</text>
+<text class="body" x="385" y="479">iptables · NAT · DNAT</text>
+<text class="small" x="385" y="511">dnsmasq DHCP only · default DROP</text>
+<path fill="none" stroke="#375879" stroke-width="3" d="M284 395H356"/><path fill="#375879" d="M350 389L360 395L350 401Z"/>
+<rect x="800" y="315" width="425" height="215" rx="18" fill="#e5efff" stroke="#9bb7e5" stroke-width="2"/>
+<text class="head" x="825" y="354">DMZ · Server 10.20.10.10</text>
+<text class="body" x="825" y="391">BIND9: A / PTR / local recursion</text>
+<text class="body" x="825" y="424">Nginx: HTTP / HTTPS / healthz</text>
+<text class="body" x="825" y="457">PostgreSQL: loopback only · UFW</text>
+<text class="small" x="825" y="494">Atomic backup · checksum · safe restore</text>
+<path fill="none" stroke="#375879" stroke-width="3" d="M695 403H796"/><path fill="#375879" d="M790 397L800 403L790 409Z"/>
+<text class="small" x="707" y="385">DMZ</text>
+<rect x="800" y="567" width="425" height="166" rx="18" fill="#fff0dc" stroke="#d2ae79" stroke-width="2"/>
+<text class="head" x="825" y="607">LAN · Client DHCP .100</text>
+<text class="body" x="825" y="644">10.20.20.0/24 · gateway .1</text>
+<text class="body" x="825" y="675">dig · curl · tcpdump · ss · UFW</text>
+<text class="small" x="825" y="709">DNS 10.20.10.10 · lease 12h</text>
+<path fill="none" stroke="#375879" stroke-width="3" d="M530 544V650H796"/><path fill="#375879" d="M790 644L800 650L790 656Z"/>
+<text class="small" x="636" y="634">LAN DHCP</text>
+<rect x="42" y="585" width="395" height="145" rx="15" fill="#fff" stroke="#c6d3e1"/>
+<text class="head" x="65" y="622">Operations on all guests</text>
+<text class="body" x="65" y="656">SSH keys · Fail2ban · systemd</text>
+<text class="body" x="65" y="687">Health JSON · metrics · logrotate</text>
+<text class="small" x="48" y="764">LAN → DMZ: DNS, HTTP, HTTPS allowed; SSH / DB blocked.  DMZ → LAN: new connections blocked.  IPv4 lab.</text>
+</svg>
