@@ -1,0 +1,67 @@
+
+PLAY [Reconcile monitoring and backup units on declared lab guests] ************
+
+TASK [operations : Install automation scripts] *********************************
+ok: [client] => (item=healthcheck.py)
+ok: [router] => (item=healthcheck.py)
+ok: [client] => (item=alert.py)
+ok: [router] => (item=alert.py)
+ok: [client] => (item=validate_backup.py)
+ok: [router] => (item=validate_backup.py)
+
+TASK [operations : Install database automation on server] **********************
+skipping: [router] => (item=backup) 
+skipping: [router] => (item=restore) 
+skipping: [router]
+skipping: [client] => (item=backup) 
+skipping: [client] => (item=restore) 
+skipping: [client]
+
+TASK [operations : Create backup directory] ************************************
+skipping: [router]
+skipping: [client]
+
+TASK [operations : Install backup environment file] ****************************
+skipping: [router]
+skipping: [client]
+
+TASK [operations : Install health configuration] *******************************
+ok: [router]
+ok: [client]
+
+TASK [operations : Install health and alert systemd units] *********************
+ok: [client] => (item=lab-health.service)
+ok: [router] => (item=lab-health.service)
+ok: [client] => (item=lab-health.timer)
+ok: [router] => (item=lab-health.timer)
+changed: [client] => (item=lab-alert@.service)
+changed: [router] => (item=lab-alert@.service)
+
+TASK [operations : Install backup systemd units] *******************************
+skipping: [router] => (item=lab-backup.service) 
+skipping: [router] => (item=lab-backup.timer) 
+skipping: [router]
+skipping: [client] => (item=lab-backup.service) 
+skipping: [client] => (item=lab-backup.timer) 
+skipping: [client]
+
+TASK [operations : Configure JSON log rotation] ********************************
+ok: [client]
+ok: [router]
+
+TASK [operations : Take the first backup immediately] **************************
+skipping: [router]
+skipping: [client]
+
+TASK [operations : Enable backup timer] ****************************************
+skipping: [router]
+skipping: [client]
+
+TASK [operations : Run initial health check and enable periodic monitoring] ****
+ok: [router]
+ok: [client]
+
+PLAY RECAP *********************************************************************
+client                     : ok=5    changed=1    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+router                     : ok=5    changed=1    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+

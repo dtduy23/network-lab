@@ -1,0 +1,45 @@
+
+PLAY [Reconcile monitoring and backup units on declared lab guests] ************
+
+TASK [operations : Install automation scripts] *********************************
+ok: [server] => (item=healthcheck.py)
+ok: [server] => (item=alert.py)
+ok: [server] => (item=validate_backup.py)
+
+TASK [operations : Install database automation on server] **********************
+ok: [server] => (item=backup)
+ok: [server] => (item=restore)
+
+TASK [operations : Create backup directory] ************************************
+ok: [server]
+
+TASK [operations : Install backup environment file] ****************************
+ok: [server]
+
+TASK [operations : Install health configuration] *******************************
+ok: [server]
+
+TASK [operations : Install health and alert systemd units] *********************
+ok: [server] => (item=lab-health.service)
+ok: [server] => (item=lab-health.timer)
+changed: [server] => (item=lab-alert@.service)
+
+TASK [operations : Install backup systemd units] *******************************
+ok: [server] => (item=lab-backup.service)
+ok: [server] => (item=lab-backup.timer)
+
+TASK [operations : Configure JSON log rotation] ********************************
+ok: [server]
+
+TASK [operations : Take the first backup immediately] **************************
+changed: [server]
+
+TASK [operations : Enable backup timer] ****************************************
+ok: [server]
+
+TASK [operations : Run initial health check and enable periodic monitoring] ****
+ok: [server]
+
+PLAY RECAP *********************************************************************
+server                     : ok=11   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

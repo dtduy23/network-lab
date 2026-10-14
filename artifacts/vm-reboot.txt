@@ -1,0 +1,30 @@
+
+PLAY [Reboot each lab VM and retain management connectivity] *******************
+
+TASK [Gathering Facts] *********************************************************
+ok: [router]
+
+TASK [Reboot the disposable guest] *********************************************
+changed: [router]
+
+PLAY [Reboot each lab VM and retain management connectivity] *******************
+
+TASK [Gathering Facts] *********************************************************
+ok: [server]
+
+TASK [Reboot the disposable guest] *********************************************
+changed: [server]
+
+PLAY [Reboot each lab VM and retain management connectivity] *******************
+
+TASK [Gathering Facts] *********************************************************
+ok: [client]
+
+TASK [Reboot the disposable guest] *********************************************
+changed: [client]
+
+PLAY RECAP *********************************************************************
+client                     : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+router                     : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+server                     : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

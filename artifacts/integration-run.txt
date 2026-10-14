@@ -1,0 +1,23 @@
+Rendered lab configuration: /home/tuna/network-infra/artifacts/rendered
+PASS isolated_topology
+PASS native_configuration_validation
+PASS real_services_and_firewalls
+PASS dhcp_dora_address_gateway_dns
+PASS dns_udp
+PASS dns_tcp
+PASS dns_reverse
+PASS dns_nxdomain_and_axfr_denial
+PASS http_routed_from_lan
+PASS https_certificate_verified
+PASS router_blocks_live_ssh_and_db_listeners
+PASS wan_cannot_access_postgresql
+PASS dnat_wan_8080_to_dmz_80
+PASS nat_lan_source_masquerade
+PASS dmz_new_connection_to_live_lan_listener_denied
+PASS direct_external_dns_egress_denied
+PASS postgres_backup_restore_data_integrity
+PASS corrupt_backup_rejected_without_db_creation
+PASS existing_restore_database_preserved
+PASS fail2ban_detection_ban_and_unban
+PASS health_json_metrics_and_failure_exit
+Integration result: 21/21 checks passed

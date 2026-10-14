@@ -1,0 +1,96 @@
+
+PLAY [Verify health alerts and backup failure recovery in the disposable server] ***
+
+TASK [Stop DNS service] ********************************************************
+changed: [server]
+
+TASK [Trigger the health service] **********************************************
+changed: [server]
+
+TASK [Require failed health result] ********************************************
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Wait for local alert service] ********************************************
+ok: [server]
+
+TASK [Restore DNS service] *****************************************************
+changed: [server]
+
+TASK [Clear health failure after DNS recovery] *********************************
+ok: [server]
+
+TASK [Enumerate complete backups before failure] *******************************
+ok: [server]
+
+TASK [Stop database cluster] ***************************************************
+changed: [server]
+
+TASK [Attempt dump while database is stopped directly via the backup script] ***
+ok: [server]
+
+TASK [Require failure instead of empty successful dump] ************************
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Enumerate remaining complete backups] ************************************
+ok: [server]
+
+TASK [Require previous backups to be preserved] ********************************
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Restore database cluster] ************************************************
+changed: [server]
+
+TASK [Override only the lab backup environment with an absent test database] ***
+changed: [server]
+
+TASK [Trigger failed backup unit] **********************************************
+changed: [server]
+
+TASK [Require systemd failure] *************************************************
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Wait for local backup failure alert] *************************************
+ok: [server]
+
+TASK [Restore the configured backup environment] *******************************
+changed: [server]
+
+TASK [Reset backup failure and take a successful backup] ***********************
+changed: [server]
+
+TASK [Force log rotation with a private state file] ****************************
+changed: [server]
+
+TASK [Write a new health event after rotation] *********************************
+changed: [server]
+
+TASK [Check newly created log permissions] *************************************
+ok: [server]
+
+TASK [Require root-owned log with expected mode] *******************************
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Save rotated local alerts as reviewable evidence] ************************
+changed: [server]
+
+TASK [Save recovered health snapshot] ******************************************
+changed: [server]
+
+PLAY RECAP *********************************************************************
+server                     : ok=25   changed=13   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

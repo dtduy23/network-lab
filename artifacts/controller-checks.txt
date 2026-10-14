@@ -1,0 +1,17 @@
+..................................                                       [100%]
+---- generated xml file: /home/tuna/network-infra/artifacts/unit-tests.xml -----
+34 passed in 2.37s
+Rendered lab configuration: /home/tuna/network-infra/artifacts/rendered
+
+playbook: ansible/site.yml
+
+playbook: ansible/verify.yml
+
+playbook: ansible/reboot.yml
+
+playbook: ansible/drills.yml
+
+playbook: ansible/firewall.yml
+
+playbook: ansible/operations.yml
+Syntax OK

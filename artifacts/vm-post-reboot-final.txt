@@ -1,0 +1,307 @@
+
+PLAY [Verify administration and routing on every guest] ************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [server]
+ok: [router]
+ok: [client]
+
+TASK [Check effective SSH settings] ********************************************
+ok: [server]
+ok: [router]
+ok: [client]
+
+TASK [Require key-based SSH and disabled root login] ***************************
+ok: [router] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Check service timers] ****************************************************
+ok: [server]
+ok: [router]
+ok: [client]
+
+TASK [Check active SSH protection jail] ****************************************
+ok: [server]
+ok: [router]
+ok: [client]
+
+TASK [Check the primary route] *************************************************
+ok: [server]
+ok: [router]
+ok: [client]
+
+TASK [Require endpoint Internet traffic to pass through router] ****************
+skipping: [router]
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Run the real health script] **********************************************
+ok: [server]
+ok: [client]
+ok: [router]
+
+PLAY [Verify LAN services and isolation] ***************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [client]
+
+TASK [Verify the reserved DHCP address] ****************************************
+ok: [client]
+
+TASK [Require router DHCP reservation] *****************************************
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Query DNS over UDP] ******************************************************
+ok: [client]
+
+TASK [Query DNS over TCP] ******************************************************
+ok: [client]
+
+TASK [Query reverse DNS] *******************************************************
+ok: [client]
+
+TASK [Require correct DNS responses] *******************************************
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Check missing name is NXDOMAIN] ******************************************
+ok: [client]
+
+TASK [Require NXDOMAIN] ********************************************************
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Require zone transfer to be refused] *************************************
+ok: [client]
+
+TASK [Verify transfer restriction] *********************************************
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Check web health through router] *****************************************
+ok: [client]
+
+TASK [Require successful application health response] **************************
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Fetch the lab certificate through administration channel] ****************
+ok: [client -> server(127.0.0.1)]
+
+TASK [Install certificate for this verification request] ***********************
+ok: [client]
+
+TASK [Verify HTTPS with certificate validation enabled] ************************
+ok: [client]
+
+TASK [Attempt forbidden service connections] ***********************************
+ok: [client] => (item=22)
+ok: [client] => (item=5432)
+
+TASK [Require firewall denials] ************************************************
+ok: [client] => (item={'changed': False, 'stdout': '', 'stderr': '', 'rc': 1, 'cmd': ['nc', '-z', '-w', '2', '10.20.10.10', '22'], 'start': '2026-10-14 21:15:18.311239', 'end': '2026-10-14 21:15:20.366509', 'delta': '0:00:02.055270', 'failed': False, 'msg': 'non-zero return code', 'invocation': {'module_args': {'_raw_params': 'nc -z -w 2 10.20.10.10 22', '_uses_shell': False, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'cmd': None, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': [], 'stderr_lines': [], 'failed_when_result': False, 'failed_when_suppressed_exception': '(traceback unavailable)', 'item': 22, 'ansible_loop_var': 'item'}) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "cmd": [
+            "nc",
+            "-z",
+            "-w",
+            "2",
+            "10.20.10.10",
+            "22"
+        ],
+        "delta": "0:00:02.055270",
+        "end": "2026-10-14 21:15:20.366509",
+        "failed": false,
+        "failed_when_result": false,
+        "failed_when_suppressed_exception": "(traceback unavailable)",
+        "invocation": {
+            "module_args": {
+                "_raw_params": "nc -z -w 2 10.20.10.10 22",
+                "_uses_shell": false,
+                "argv": null,
+                "chdir": null,
+                "cmd": null,
+                "creates": null,
+                "executable": null,
+                "expand_argument_vars": true,
+                "removes": null,
+                "stdin": null,
+                "stdin_add_newline": true,
+                "strip_empty_ends": true
+            }
+        },
+        "item": 22,
+        "msg": "non-zero return code",
+        "rc": 1,
+        "start": "2026-10-14 21:15:18.311239",
+        "stderr": "",
+        "stderr_lines": [],
+        "stdout": "",
+        "stdout_lines": []
+    },
+    "msg": "All assertions passed"
+}
+ok: [client] => (item={'changed': False, 'stdout': '', 'stderr': '', 'rc': 1, 'cmd': ['nc', '-z', '-w', '2', '10.20.10.10', '5432'], 'start': '2026-10-14 21:15:24.752045', 'end': '2026-10-14 21:15:26.799668', 'delta': '0:00:02.047623', 'failed': False, 'msg': 'non-zero return code', 'invocation': {'module_args': {'_raw_params': 'nc -z -w 2 10.20.10.10 5432', '_uses_shell': False, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'cmd': None, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': [], 'stderr_lines': [], 'failed_when_result': False, 'failed_when_suppressed_exception': '(traceback unavailable)', 'item': 5432, 'ansible_loop_var': 'item'}) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "cmd": [
+            "nc",
+            "-z",
+            "-w",
+            "2",
+            "10.20.10.10",
+            "5432"
+        ],
+        "delta": "0:00:02.047623",
+        "end": "2026-10-14 21:15:26.799668",
+        "failed": false,
+        "failed_when_result": false,
+        "failed_when_suppressed_exception": "(traceback unavailable)",
+        "invocation": {
+            "module_args": {
+                "_raw_params": "nc -z -w 2 10.20.10.10 5432",
+                "_uses_shell": false,
+                "argv": null,
+                "chdir": null,
+                "cmd": null,
+                "creates": null,
+                "executable": null,
+                "expand_argument_vars": true,
+                "removes": null,
+                "stdin": null,
+                "stdin_add_newline": true,
+                "strip_empty_ends": true
+            }
+        },
+        "item": 5432,
+        "msg": "non-zero return code",
+        "rc": 1,
+        "start": "2026-10-14 21:15:24.752045",
+        "stderr": "",
+        "stderr_lines": [],
+        "stdout": "",
+        "stdout_lines": []
+    },
+    "msg": "All assertions passed"
+}
+
+PLAY [Verify DHCP lease and firewall rules on router] **************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [router]
+
+TASK [Check router default deny policy survives provisioning] ******************
+ok: [router]
+
+TASK [Require default deny on INPUT and FORWARD] *******************************
+ok: [router] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Read DHCP leases] ********************************************************
+ok: [router]
+
+TASK [Require client MAC and reserved address in a real lease] *****************
+ok: [router] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Check IPv4 forwarding] ***************************************************
+ok: [router]
+
+TASK [Require enabled forwarding] **********************************************
+ok: [router] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Collect firewall counters] ***********************************************
+ok: [router]
+
+PLAY [Verify backup and safe restore on server] ********************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [server]
+
+TASK [Check backup timer] ******************************************************
+ok: [server]
+
+TASK [Create a real backup] ****************************************************
+changed: [server]
+
+TASK [Choose a unique restore database] ****************************************
+ok: [server]
+
+TASK [Restore to a new database] ***********************************************
+changed: [server]
+
+TASK [Count restored events] ***************************************************
+ok: [server]
+
+TASK [Require the seeded events to survive backup and restore] *****************
+ok: [server] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Remove only the disposable verification database] ************************
+changed: [server]
+
+PLAY [Verify host port forwarding] *********************************************
+
+TASK [Verify operator key and restricted sudo command on each guest] ***********
+ok: [localhost] => (item=router)
+ok: [localhost] => (item=server)
+ok: [localhost] => (item=client)
+
+TASK [Check localhost to WAN to DMZ DNAT] **************************************
+ok: [localhost]
+
+TASK [Require host demonstration route] ****************************************
+ok: [localhost] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+PLAY RECAP *********************************************************************
+client                     : ok=26   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+router                     : ok=15   changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+server                     : ok=16   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

@@ -1,0 +1,63 @@
+
+PLAY [Reconcile routing firewall and DHCP without reprovisioning endpoints] ****
+
+TASK [Gathering Facts] *********************************************************
+ok: [router]
+
+TASK [Identify the declared WAN management adapter] ****************************
+skipping: [router] => (item=lan0) 
+ok: [router] => (item=enp0s2)
+skipping: [router] => (item=dmz0) 
+skipping: [router] => (item=lo) 
+
+TASK [Require the adapter declared in lab.yml] *********************************
+ok: [router] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Apply the shared router role] ********************************************
+included: router for router
+
+TASK [router : Check whether UFW is active on router] **************************
+ok: [router]
+
+TASK [router : Disable UFW only when active (avoid resetting an existing iptables policy)] ***
+skipping: [router]
+
+TASK [router : Configure DHCP only on the LAN adapter] *************************
+ok: [router]
+
+TASK [router : Check DHCP configuration] ***************************************
+ok: [router]
+
+TASK [router : Render IPv4 routing and firewall policy] ************************
+changed: [router]
+
+TASK [router : Validate iptables policy] ***************************************
+ok: [router]
+
+TASK [router : Install persistent firewall unit] *******************************
+ok: [router]
+
+TASK [router : Inspect live default policies before deciding whether to reload] ***
+ok: [router]
+
+TASK [router : Detect policy drift, including defaults reset by other firewall managers] ***
+ok: [router]
+
+TASK [router : Enable firewall at boot without clearing unrelated tables] ******
+changed: [router]
+
+TASK [router : Rebuild Fail2ban chains after replacing the router filter table] ***
+changed: [router]
+
+TASK [router : Install an explicit DHCP systemd unit] **************************
+ok: [router]
+
+TASK [router : Enable DHCP] ****************************************************
+ok: [router]
+
+PLAY RECAP *********************************************************************
+router                     : ok=16   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+

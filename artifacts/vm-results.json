@@ -1,0 +1,10 @@
+{
+  "verified_at": "2026-10-14T14:34:14.430181+00:00",
+  "passed": true,
+  "backend": "qemu",
+  "log": "artifacts/vm-verification.txt",
+  "reboot_verified": true,
+  "reboot_log": "artifacts/vm-reboot.txt",
+  "drills_verified": true,
+  "drills_log": "artifacts/vm-drills.txt"
+}

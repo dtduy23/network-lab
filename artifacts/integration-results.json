@@ -1,0 +1,135 @@
+{
+  "executed_at": "2026-10-14T13:51:08.026877+00:00",
+  "environment": "Ubuntu 24.04 containers; isolated network namespaces; NET_ADMIN only",
+  "vm_lifecycle_verified": false,
+  "passed": true,
+  "checks": [
+    {
+      "name": "isolated_topology",
+      "passed": true,
+      "seconds": 4.4,
+      "detail": null
+    },
+    {
+      "name": "native_configuration_validation",
+      "passed": true,
+      "seconds": 1.466,
+      "detail": "BIND, dnsmasq, iptables, Netplan, systemd units and logrotate validated by Ubuntu binaries"
+    },
+    {
+      "name": "real_services_and_firewalls",
+      "passed": true,
+      "seconds": 7.755,
+      "detail": "Real BIND, DHCP, Nginx TLS, PostgreSQL and guest firewall policies started"
+    },
+    {
+      "name": "dhcp_dora_address_gateway_dns",
+      "passed": true,
+      "seconds": 0.43,
+      "detail": "Internet Systems Consortium DHCP Client 4.4.3-P1\nCopyright 2004-2022 Internet Systems Consortium.\nAll rights reserved.\nFor info, please visit https://www.isc.org/software/dhcp/\n\nListening on LPF/lan0/52:54:00:20:20:20\nSending on   LPF/lan0/52:54:00:20:20:20\nSending on   Socket/fallback\nxid: warning: no netdev with useable HWADDR found for seed's uniqueness enforcement\nxid: rand init seed (0x7ec5ecac) built using gethostid\nDHCPDISCOVER on lan0 to 255.255.255.255 port 67 interval 3 (xid=0xe22d3475)\nDHCPOFFER of 10.20.20.100 from 10.20.20.1\nDHCPREQUEST for 10.20.20.100 on lan0 to 255.255.255.255 port 67 (xid=0x75342de2)\nDHCPACK of 10.20.20.100 from 10.20.20.1 (xid=0xe22d3475)\nbound to 10.20.20.100 -- renewal in 17199 seconds.\n"
+    },
+    {
+      "name": "dns_udp",
+      "passed": true,
+      "seconds": 0.066,
+      "detail": "10.20.10.10"
+    },
+    {
+      "name": "dns_tcp",
+      "passed": true,
+      "seconds": 0.072,
+      "detail": "10.20.10.10"
+    },
+    {
+      "name": "dns_reverse",
+      "passed": true,
+      "seconds": 0.071,
+      "detail": "client.infra.test."
+    },
+    {
+      "name": "dns_nxdomain_and_axfr_denial",
+      "passed": true,
+      "seconds": 0.146,
+      "detail": "NXDOMAIN returned; AXFR denied"
+    },
+    {
+      "name": "http_routed_from_lan",
+      "passed": true,
+      "seconds": 0.071,
+      "detail": "{\"service\":\"network-lab-web\",\"status\":\"ok\"}"
+    },
+    {
+      "name": "https_certificate_verified",
+      "passed": true,
+      "seconds": 0.171,
+      "detail": "{\"service\":\"network-lab-web\",\"status\":\"ok\"}"
+    },
+    {
+      "name": "router_blocks_live_ssh_and_db_listeners",
+      "passed": true,
+      "seconds": 5.945,
+      "detail": "SSH and database probe had active listeners and were blocked by router; Chain FORWARD (policy DROP 4 packets, 240 bytes)\n pkts bytes target     prot opt in     out     source               destination         \n    0     0 DROP       0    --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate INVALID\n   51  6694 ACCEPT     0    --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate RELATED,ESTABLISHED\n    7   503 ACCEPT     17   --  lan0   dmz0    10.20.20.0/24        10.20.10.10          udp dpt:53\n    4   240 ACCEPT     6    --  lan0   d"
+    },
+    {
+      "name": "wan_cannot_access_postgresql",
+      "passed": true,
+      "seconds": 2.054,
+      "detail": "Connection denied: 10.20.10.10:5432"
+    },
+    {
+      "name": "dnat_wan_8080_to_dmz_80",
+      "passed": true,
+      "seconds": 0.059,
+      "detail": "{\"service\":\"network-lab-web\",\"status\":\"ok\"}"
+    },
+    {
+      "name": "nat_lan_source_masquerade",
+      "passed": true,
+      "seconds": 0.058,
+      "detail": "WAN observed masqueraded source 172.18.0.2"
+    },
+    {
+      "name": "dmz_new_connection_to_live_lan_listener_denied",
+      "passed": true,
+      "seconds": 3.706,
+      "detail": "Connection denied: 10.20.20.100:8081"
+    },
+    {
+      "name": "direct_external_dns_egress_denied",
+      "passed": true,
+      "seconds": 2.201,
+      "detail": "WAN DNS has a valid answer; direct client DNS query blocked by router"
+    },
+    {
+      "name": "postgres_backup_restore_data_integrity",
+      "passed": true,
+      "seconds": 1.076,
+      "detail": "Dump and restored rows are identical; checksum verified"
+    },
+    {
+      "name": "corrupt_backup_rejected_without_db_creation",
+      "passed": true,
+      "seconds": 0.295,
+      "detail": "Corrupt package rejected before database creation"
+    },
+    {
+      "name": "existing_restore_database_preserved",
+      "passed": true,
+      "seconds": 0.151,
+      "detail": "Existing restore database preserved"
+    },
+    {
+      "name": "fail2ban_detection_ban_and_unban",
+      "passed": true,
+      "seconds": 0.925,
+      "detail": "SSHD failures recognized; ban and unban changed real iptables rules"
+    },
+    {
+      "name": "health_json_metrics_and_failure_exit",
+      "passed": true,
+      "seconds": 0.296,
+      "detail": "Valid backup counted; forced disk threshold returned exit 1 and JSON alert data"
+    }
+  ],
+  "error": null
+}

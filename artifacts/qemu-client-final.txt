@@ -1,0 +1,133 @@
+
+PLAY [Bootstrap administration on all lab guests] ******************************
+
+PLAY [Configure router before dependent guests] ********************************
+skipping: no hosts matched
+
+PLAY [Configure DMZ services] **************************************************
+skipping: no hosts matched
+
+PLAY [Configure DHCP client] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [client]
+
+TASK [network : Determine the management NIC from the fixed MAC rather than default route] ***
+skipping: [client] => (item=lo) 
+skipping: [client] => (item=lan0) 
+ok: [client] => (item=enp0s2)
+
+TASK [network : Require a unique management adapter] ***************************
+ok: [client] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [network : Preserve an explicit on-link management subnet without its default route] ***
+ok: [client]
+
+TASK [network : Remember the management subnet] ********************************
+ok: [client]
+
+TASK [network : Install role-specific packages before restricting management egress] ***
+ok: [client]
+
+TASK [network : Prevent cloud-init from rewriting guest networking on reboot] ***
+ok: [client]
+
+TASK [network : Find pre-existing Netplan files] *******************************
+ok: [client]
+
+TASK [network : Archive unmanaged Netplan files once inside the disposable guest] ***
+skipping: [client] => (item={'path': '/etc/netplan/90-network-lab.yaml', 'mode': '0600', 'isdir': False, 'ischr': False, 'isblk': False, 'isreg': True, 'isfifo': False, 'islnk': False, 'issock': False, 'uid': 0, 'gid': 0, 'size': 626, 'inode': 262806, 'dev': 64769, 'nlink': 1, 'atime': 1791984683.9714754, 'mtime': 1791984673.9424832, 'ctime': 1791984677.4014804, 'gr_name': 'root', 'pw_name': 'root', 'wusr': True, 'rusr': True, 'xusr': False, 'wgrp': False, 'rgrp': False, 'xgrp': False, 'woth': False, 'roth': False, 'xoth': False, 'isuid': False, 'isgid': False}) 
+skipping: [client]
+
+TASK [network : Render Netplan] ************************************************
+ok: [client]
+
+TASK [network : Validate Netplan before applying] ******************************
+ok: [client]
+
+TASK [network : Apply networking asynchronously to allow reconnection] *********
+skipping: [client]
+
+TASK [network : Reconnect to management SSH] ***********************************
+skipping: [client]
+
+TASK [network : Wait for network configuration to finish] **********************
+skipping: [client]
+
+TASK [network : Disable IPv6 in this IPv4 teaching lab to avoid an unfiltered path] ***
+ok: [client]
+
+TASK [network : Apply guest sysctl values] *************************************
+skipping: [client]
+
+TASK [endpoint : Disable IPv6 handling in UFW for this IPv4 lab] ***************
+ok: [client]
+
+TASK [endpoint : Install endpoint UFW policy script] ***************************
+ok: [client]
+
+TASK [endpoint : Check UFW state] **********************************************
+ok: [client]
+
+TASK [endpoint : Apply changed UFW policy on the lab guest] ********************
+[WARNING]: reset_connection task does not support when conditional
+skipping: [client]
+
+TASK [endpoint : Reset SSH transport after endpoint firewall changes] **********
+
+TASK [endpoint : Reconnect after endpoint firewall changes] ********************
+skipping: [client]
+
+TASK [endpoint : Wait for endpoint firewall policy to finish] ******************
+skipping: [client]
+
+TASK [endpoint : Rebuild Fail2ban chains after UFW reset] **********************
+skipping: [client]
+
+TASK [operations : Install automation scripts] *********************************
+changed: [client] => (item=healthcheck.py)
+changed: [client] => (item=alert.py)
+changed: [client] => (item=validate_backup.py)
+
+TASK [operations : Install database automation on server] **********************
+skipping: [client] => (item=backup) 
+skipping: [client] => (item=restore) 
+skipping: [client]
+
+TASK [operations : Create backup directory] ************************************
+skipping: [client]
+
+TASK [operations : Install backup environment file] ****************************
+skipping: [client]
+
+TASK [operations : Install health configuration] *******************************
+changed: [client]
+
+TASK [operations : Install health and alert systemd units] *********************
+changed: [client] => (item=lab-health.service)
+changed: [client] => (item=lab-health.timer)
+changed: [client] => (item=lab-alert@.service)
+
+TASK [operations : Install backup systemd units] *******************************
+skipping: [client] => (item=lab-backup.service) 
+skipping: [client] => (item=lab-backup.timer) 
+skipping: [client]
+
+TASK [operations : Configure JSON log rotation] ********************************
+changed: [client]
+
+TASK [operations : Take the first backup immediately] **************************
+skipping: [client]
+
+TASK [operations : Enable backup timer] ****************************************
+skipping: [client]
+
+TASK [operations : Run initial health check and enable periodic monitoring] ****
+changed: [client]
+
+PLAY RECAP *********************************************************************
+client                     : ok=19   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+
